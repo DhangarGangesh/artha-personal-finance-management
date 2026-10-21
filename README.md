@@ -437,6 +437,9 @@ All protected endpoints require the header: `Authorization: Bearer <token>`
 | `POST` | `/api/auth/login` | Public | Authenticate user and receive JWT token |
 | `POST` | `/api/auth/logout` | Public | Stateless client logout (discards token) |
 | `GET` | `/api/auth/me` | Protected | Fetch current logged-in user profile |
+| `PUT` | `/api/auth/password` | Protected | Update account password with verification (`currentPassword`, `newPassword`) |
+| `PUT` | `/api/auth/profile` | Protected | Update profile name and display metadata (`name`) |
+
 
 ### 💳 Transactions (`/api/transactions`)
 | Method | Endpoint | Access | Description |
@@ -510,6 +513,8 @@ When presenting or defending this project in an examination or viva:
    * *Answer:* Core financial metrics (budget utilization, goal progress, remaining balances) are calculated dynamically on read via pure functions. Storing derived fields in the database can lead to data synchronization bugs when transactions are edited or deleted.
 5. **How does Artha maintain user privacy when administrators inspect the platform?**
    * *Answer:* The privacy boundary is architecturally enforced on the backend and API layer: Administrators are prevented from querying individual users' transactions, budgets, goals, regression outputs, or financial alerts. All financial endpoints remain strictly isolated to the caller's verified JWT identity (`{ userId: req.user._id }`). Admin endpoints only expose safe account metadata (name, email, role, status) and global, privacy-preserving aggregate metrics (e.g. transaction category counts without monetary sums or user identifiers).
+6. **How does Artha prevent cross-account data leakage in notifications and alerts?**
+   * *Answer:* The notification popover and alert feeds are dynamically bound to the authenticated user's JWT identity (`req.user._id`). The frontend popover fetches live anomaly evaluations directly from `/api/alerts` with zero static dummy mockups. Read and dismissed states are persisted in client storage strictly scoped per-user (`artha_read_notifications_${userId}`). Switching accounts or registering a clean new account immediately resets state and queries only that specific user's financial ledger, preventing cross-account financial leakage.
 
 ---
 
@@ -517,3 +522,4 @@ When presenting or defending this project in an examination or viva:
 
 * Developed at **Sardar Patel Institute of Technology (S.P.I.T.), Mumbai**.
 * Framework reference: *Artha – Personal Finance Management System: A Research Gap Analysis and Proposed Framework* (2026).
+

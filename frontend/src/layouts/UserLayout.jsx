@@ -7,7 +7,6 @@ import {
   Target,
   BarChart3,
   TrendingUp,
-  Bell,
   Sun,
   Moon,
   LogOut,
@@ -350,7 +349,7 @@ export const UserLayout = () => {
                   lineHeight: 1.2,
                 }}
               >
-                Wellcome, {userName} <span role="img" aria-label="wave">👋</span>
+                Welcome, {userName} <span role="img" aria-label="wave">👋</span>
               </h1>
             </div>
           </div>

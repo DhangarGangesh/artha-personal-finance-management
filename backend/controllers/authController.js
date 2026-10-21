@@ -53,3 +53,34 @@ exports.logout = asyncHandler(async (req, res) => {
 exports.me = (req, res) => {
   res.status(200).json({ success: true, data: { user: req.user } });
 };
+
+/** PUT /api/auth/password (protected) -> update password */
+exports.changePassword = asyncHandler(async (req, res) => {
+  const reqMeta = {
+    ip: req.ip || req.connection.remoteAddress || '',
+    userAgent: req.get('user-agent') || '',
+  };
+  const { currentPassword, newPassword } = req.body;
+  const result = await authService.changePassword(
+    req.user._id,
+    { currentPassword, newPassword },
+    reqMeta
+  );
+  res.status(200).json({
+    success: true,
+    message: 'Password updated successfully',
+    data: result,
+  });
+});
+
+/** PUT /api/auth/profile (protected) -> update profile name */
+exports.updateProfile = asyncHandler(async (req, res) => {
+  const { name } = req.body;
+  const user = await authService.updateProfile(req.user._id, { name });
+  res.status(200).json({
+    success: true,
+    message: 'Profile updated successfully',
+    data: { user },
+  });
+});
+

@@ -29,6 +29,24 @@ export const authService = {
     return res.data?.user;
   },
 
+  async changePassword(currentPassword, newPassword) {
+    const res = await api.put('/auth/password', {
+      currentPassword,
+      newPassword,
+    });
+    if (res.data?.token) {
+      tokenStorage.set(res.data.token);
+    }
+    return res.data;
+  },
+
+  async updateProfile(name) {
+    const res = await api.put('/auth/profile', {
+      name: name.trim(),
+    });
+    return res.data?.user;
+  },
+
   async logout() {
     try {
       await api.post('/auth/logout');
@@ -41,3 +59,4 @@ export const authService = {
 };
 
 export default authService;
+

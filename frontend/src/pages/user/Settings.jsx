@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   User,
   Bell,
@@ -16,19 +16,28 @@ import {
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
 import { useToast } from '../../components/common/Toast';
+import { authService } from '../../services/authService';
 
 export const Settings = () => {
-  const { user } = useAuth();
+  const { user, refreshUser } = useAuth();
   const { isDark, toggleTheme } = useTheme();
   const toast = useToast();
 
   const [activeTab, setActiveTab] = useState('profile');
 
   // Profile State
-  const [name, setName] = useState(user?.name || 'Ethan Cole');
-  const [email] = useState(user?.email || 'ethan.cole@example.com');
+  const [name, setName] = useState(user?.name || '');
+  const [email, setEmail] = useState(user?.email || '');
   const [currency, setCurrency] = useState('INR');
   const [dateFormat, setDateFormat] = useState('DD/MM/YYYY');
+  const [isSavingProfile, setIsSavingProfile] = useState(false);
+
+  useEffect(() => {
+    if (user) {
+      if (user.name) setName(user.name);
+      if (user.email) setEmail(user.email);
+    }
+  }, [user]);
 
   // Notifications State
   const [notifyBudget, setNotifyBudget] = useState(true);
@@ -42,17 +51,31 @@ export const Settings = () => {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [twoFactorEnabled, setTwoFactorEnabled] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [isUpdatingPassword, setIsUpdatingPassword] = useState(false);
 
   // Financial Thresholds
   const [budgetThreshold, setBudgetThreshold] = useState('85');
   const [autoCategorization, setAutoCategorization] = useState(true);
 
-  const handleSaveProfile = (e) => {
+  const handleSaveProfile = async (e) => {
     e.preventDefault();
-    toast.success('Profile preferences updated successfully');
+    if (!name.trim()) {
+      toast.error('Name cannot be empty');
+      return;
+    }
+    try {
+      setIsSavingProfile(true);
+      await authService.updateProfile(name.trim());
+      if (refreshUser) await refreshUser();
+      toast.success('Profile preferences updated successfully');
+    } catch (err) {
+      toast.error(err.message || 'Failed to update profile');
+    } finally {
+      setIsSavingProfile(false);
+    }
   };
 
-  const handleUpdatePassword = (e) => {
+  const handleUpdatePassword = async (e) => {
     e.preventDefault();
     if (!currentPassword || !newPassword) {
       toast.error('Please enter both your current and new password');
@@ -62,15 +85,33 @@ export const Settings = () => {
       toast.error('New password must be at least 8 characters long');
       return;
     }
+    if (!/[A-Za-z]/.test(newPassword) || !/\d/.test(newPassword)) {
+      toast.error('New password must contain at least one letter and one number');
+      return;
+    }
     if (newPassword !== confirmPassword) {
       toast.error('New password and confirmation do not match');
       return;
     }
-    toast.success('Password updated successfully');
-    setCurrentPassword('');
-    setNewPassword('');
-    setConfirmPassword('');
+    if (currentPassword === newPassword) {
+      toast.error('New password cannot be the same as your current password');
+      return;
+    }
+
+    try {
+      setIsUpdatingPassword(true);
+      await authService.changePassword(currentPassword, newPassword);
+      toast.success('Password updated successfully! You can now use your new password.');
+      setCurrentPassword('');
+      setNewPassword('');
+      setConfirmPassword('');
+    } catch (err) {
+      toast.error(err.message || 'Failed to update password');
+    } finally {
+      setIsUpdatingPassword(false);
+    }
   };
+
 
   const handleExportData = () => {
     const dummyExport = {
@@ -215,8 +256,12 @@ export const Settings = () => {
             </div>
 
             <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '0.5rem' }}>
-              <button type="submit" className="btn btn-primary">
-                Save Profile Changes
+              <button
+                type="submit"
+                className="btn btn-primary"
+                disabled={isSavingProfile}
+              >
+                {isSavingProfile ? 'Saving Changes...' : 'Save Profile Changes'}
               </button>
             </div>
           </form>
@@ -474,8 +519,13 @@ export const Settings = () => {
                 />
               </div>
 
-              <button type="submit" className="btn btn-primary" style={{ alignSelf: 'flex-start', marginTop: '0.5rem' }}>
-                Update Password
+              <button
+                type="submit"
+                className="btn btn-primary"
+                disabled={isUpdatingPassword}
+                style={{ alignSelf: 'flex-start', marginTop: '0.5rem' }}
+              >
+                {isUpdatingPassword ? 'Updating Password...' : 'Update Password'}
               </button>
             </form>
           </div>
