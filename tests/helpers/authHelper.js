@@ -19,7 +19,9 @@ function client(app, token) {
     get: (url) => auth(request(app).get(url)),
     post: (url, body) => auth(request(app).post(url)).send(body),
     put: (url, body) => auth(request(app).put(url)).send(body),
+    patch: (url, body) => auth(request(app).patch(url)).send(body),
     del: (url) => auth(request(app).delete(url)),
+    delete: (url, body) => auth(request(app).delete(url)).send(body),
   };
 }
 

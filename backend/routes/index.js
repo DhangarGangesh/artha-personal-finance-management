@@ -12,5 +12,6 @@ router.use('/dashboard', require('./dashboardRoutes'));
 router.use('/analytics', require('./analyticsRoutes'));
 router.use('/regression', require('./regressionRoutes'));
 router.use('/alerts', require('./alertRoutes'));
+router.use('/admin', require('./adminRoutes'));
 
 module.exports = router;

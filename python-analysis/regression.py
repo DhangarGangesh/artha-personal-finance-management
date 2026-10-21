@@ -89,6 +89,75 @@ def _equation(coefficient, intercept):
   return f"y = {coefficient:.2f}x {sign} {abs(intercept):.2f}"
 
 
+def _next_month_str(year, month, step):
+  m = month + step
+  y = year + (m - 1) // 12
+  m = ((m - 1) % 12) + 1
+  return f"{y:04d}-{m:02d}"
+
+
+def _generate_expenditure_forecast(fit, monthly_data, horizon=3):
+  if not fit or len(monthly_data) < MIN_MONTHS:
+    return {
+      "status": "insufficient_data",
+      "method": "Ordinary Least Squares (OLS) Linear Trend with 95% Prediction Intervals",
+      "message": f"At least {MIN_MONTHS} months of historical records are required to project expenditure trends.",
+      "monthsAvailable": len(monthly_data),
+      "monthsNeeded": MIN_MONTHS,
+      "projections": [],
+    }
+
+  n = len(monthly_data)
+  x_vals = np.array([row["monthIndex"] for row in monthly_data], dtype=float)
+  y_vals = np.array([row["expenditure"] for row in monthly_data], dtype=float)
+  slope = float(fit["coefficient"])
+  intercept = float(fit["intercept"])
+  fitted = x_vals * slope + intercept
+  residuals = y_vals - fitted
+  residual_sum_sq = float(np.sum(residuals ** 2))
+
+  df = max(1, n - 2)
+  s_e = float(np.sqrt(residual_sum_sq / df))
+  x_mean = float(np.mean(x_vals))
+  ss_x = float(np.sum((x_vals - x_mean) ** 2))
+  t_crit = 2.0 if n >= 5 else 2.35
+
+  last_month_str = monthly_data[-1]["month"]
+  try:
+    last_y, last_m = map(int, last_month_str.split("-"))
+  except Exception:
+    last_y, last_m = 2026, 1
+
+  projections = []
+  for step in range(1, horizon + 1):
+    x_future = float(n - 1 + step)
+    pred_y = max(0.0, float(slope * x_future + intercept))
+    se_pred = s_e * np.sqrt(1.0 + 1.0 / n + ((x_future - x_mean) ** 2) / ss_x) if ss_x > 1e-9 else s_e
+    margin = t_crit * se_pred
+    lower = max(0.0, float(pred_y - margin))
+    upper = float(pred_y + margin)
+    future_month_str = _next_month_str(last_y, last_m, step)
+
+    projections.append({
+      "month": future_month_str,
+      "monthIndex": int(x_future),
+      "projected": _rounded(pred_y),
+      "lowerBound": _rounded(lower),
+      "upperBound": _rounded(upper),
+      "horizonLabel": f"+{step} Month{'s' if step > 1 else ''}",
+    })
+
+  return {
+    "status": "available",
+    "method": "Ordinary Least Squares (OLS) Linear Trend with 95% Prediction Intervals",
+    "horizonMonths": horizon,
+    "standardError": _rounded(s_e),
+    "assumptions": "Assumes historical linear spending drift continues without major structural or lifestyle changes.",
+    "limitations": "Linear extrapolation does not account for one-time emergency expenses, seasonal holiday spikes, or external macroeconomic shifts.",
+    "projections": projections,
+  }
+
+
 def _insufficient(monthly_data, message):
   return {
     "status": "insufficient_data",
@@ -100,6 +169,14 @@ def _insufficient(monthly_data, message):
     "interpretation": message,
     "monthlyData": monthly_data,
     "fittedValues": [],
+    "forecast": {
+      "status": "insufficient_data",
+      "method": "Ordinary Least Squares (OLS) Linear Trend with 95% Prediction Intervals",
+      "message": message,
+      "monthsAvailable": len(monthly_data),
+      "monthsNeeded": MIN_MONTHS,
+      "projections": [],
+    },
   }
 
 
@@ -225,6 +302,7 @@ def analyze_regression(transactions, as_of):
         "currentVsTrend": _current_vs_trend(monthly_data, expense_fit["fittedValues"], as_of),
         "monthlyData": monthly_data,
         "fittedValues": [_rounded(value) for value in expense_fit["fittedValues"]],
+        "forecast": _generate_expenditure_forecast(expense_fit, monthly_data, horizon=3),
       }
 
   return {"asOf": as_of.isoformat(), "incomeSavings": income_savings, "expenditureTrend": expenditure}

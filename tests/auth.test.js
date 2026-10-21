@@ -37,7 +37,7 @@ describe('POST /api/auth/register', () => {
     expect(res.body.data.user._id).toMatch(/^[0-9a-f]{24}$/);
     expect(res.body.data.user.createdAt).toBeDefined();
     expect(typeof res.body.data.token).toBe('string');
-    expect(Object.keys(res.body.data.user).sort()).toEqual(['_id', 'createdAt', 'email', 'name', 'updatedAt']);
+    expect(Object.keys(res.body.data.user).sort()).toEqual(['_id', 'createdAt', 'email', 'lastLoginAt', 'name', 'role', 'status', 'updatedAt']);
     expectNoSecrets(res);
   });
 
@@ -128,7 +128,7 @@ describe('POST /api/auth/register', () => {
     const res = await register({ ...VALID, passwordHash: 'attacker-chosen', _id: forgedId, role: 'admin', isAdmin: true });
     expect(res.status).toBe(201);
     expect(res.body.data.user._id).not.toBe(forgedId);
-    expect(res.body.data.user.role).toBeUndefined();
+    expect(res.body.data.user.role).toBe('user'); // role: 'admin' cannot be mass-assigned; always 'user'
     // The real password still works; the attacker-chosen "hash" was never used.
     expect((await login({ email: VALID.email, password: VALID.password })).status).toBe(200);
   });

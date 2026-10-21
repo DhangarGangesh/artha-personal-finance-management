@@ -161,3 +161,77 @@ shortfall, category concentration, low savings rate, monthly spending spike, rep
 goal contribution gap and low remaining budget. Alerts are sorted by severity (`CRITICAL`, `WARNING`, `INFO`) and
 exposed via `GET /api/alerts` to the signed-in user only. The dashboard and the dedicated `/pages/alerts.html`
 page surface the highest-priority active insights without redesigning the experience.
+
+## D24. Administrator panel, role-based access control, and strict privacy boundary
+Artha implements an administrator panel (`/pages/admin.html` and `/api/admin/*`) under strict role-based access
+control (RBAC) supporting `user` and `admin` roles, and `active` vs `suspended` statuses.
+
+1. **Strict Privacy Architecture:** Administrators have ZERO access to individual users' private financial data
+   (transactions, budgets, savings goals, personal analytics, regression results, or financial alerts). All user
+   finance APIs remain strictly scoped to `{ userId: req.user._id }`. Even if an admin user calls `/api/transactions`,
+   they see only their own records (if any); another user's record returns 404. There is no backdoor or bypass.
+2. **Privacy-Preserving Telemetry:** Administrators can only observe safe account metadata (`_id`, `name`, `email`,
+   `role`, `status`, `createdAt`, `lastLoginAt`) and global platform-wide aggregations (e.g. transaction counts per
+   category without monetary values or user linkage; total counts of budgets and goals).
+3. **Public Registration Immunity:** The public registration endpoint (`/api/auth/register`) enforces `role: 'user'`
+   and `status: 'active'`. Any attempt to pass `role: 'admin'` or `status: 'suspended'` in registration is ignored.
+4. **Account Suspension Defense:** Suspended users are locked out from logging in (403), and any active token held
+   by a suspended user is rejected on their next request.
+5. **Self-Protection Rules:** Administrators cannot suspend their own account or alter their own role. Demoting an
+   administrator requires that at least one other active administrator remains in the system.
+6. **Immutable Audit Trail:** All administrative operations (suspension, activation, role modification, admin login,
+   bootstrap) are recorded in the `audit_logs` collection with admin identity, action, target user, IP address, and
+   optional reason. Audit logs are paginated and searchable.
+7. **Secure Administrator Bootstrap:** No hardcoded credentials. Administrators are created or promoted using
+   `scripts/create-admin.js` (`npm run admin:create`) with CLI arguments or environment variables.
+
+## D25. Synthetic dataset generator, demo personas, and idempotency safeguards
+Artha provides a reusable, deterministic synthetic dataset generator (`backend/seed/seedData.js`, `scripts/seed.js`,
+invoked via `npm run seed`) designed for demonstration, stress-testing, and development of the administrator panel.
+
+1. **Realistic Persona Modeling:** Generates 50 synthetic Indian user profiles with realistic names, `@example.com`
+   emails, varied registration dates spanning 6 months (May to October 2026), and realistic account statuses
+   (45 active, 5 suspended).
+2. **Schema & RBAC Adherence:** All demo users receive `role: 'user'` through standard Mongoose schemas. The seeder
+   never creates administrators or modifies existing administrator accounts (e.g. `admin@artha.local`).
+3. **Precomputed Password Hashing:** Demo users share a uniform password (`DemoUser123`) hashed using standard bcrypt
+   (cost factor 10) generated once and reused across all synthetic profiles, enabling sub-second generation of 50 accounts
+   without bypassing authentication verification.
+4. **Relational & Financial Consistency:** Generates over 1,000 transactions, 200+ monthly budgets, and 80+ savings
+   goals with contributions. All records enforce valid foreign keys (`userId`, `goalId`), use canonical category enums
+   from `backend/utils/categories.js`, and maintain realistic income/expense ratios to trigger realistic rule-based alerts.
+5. **Strict Idempotency:** The seed script uses the reserved `@example.com` email domain. Prior to seeding, it identifies
+   existing demo accounts and deletes only their associated transactions, budgets, goals, and user documents. It NEVER
+   drops entire collections or deletes real/administrator users. Re-running the command produces a clean, identical dataset.
+6. **Production Safeguards:** Seeding is hard-blocked if `NODE_ENV === 'production'`. Attempts to run in production throw
+   an immediate error and exit before any database operation occurs.
+7. **Privacy Boundary Verification:** Automated tests (`tests/seed.test.js`) explicitly verify that after seeding 50 demo
+   accounts and 1,000+ financial records, administrative endpoints expose only privacy-preserving aggregate statistics
+   and safe user metadata, with zero exposure of individual financial balances or transactions.
+
+## D26. Dedicated Administrator Layout, UI/UX Redesign, and Multi-View System Governance
+Artha implements a completely separated, dedicated administrative experience (`/pages/admin.html`) distinct from
+the personal finance user portal:
+
+1. **Strictly Dedicated Navigation Layout:** User-facing finance links (`Transactions`, `Budgets`, `Goals`, `Analytics`,
+   `Financial Trends`, `Insights & Alerts`) are entirely removed from the admin portal. They are replaced by 7
+   dedicated administrative views:
+   - **Overview:** Executive KPIs, 6-month registration trends, status distributions, and recent administrative actions.
+   - **User Management:** Instant debounced search, status/role filtering, column sorting, pagination, moderation history,
+     and authorized CSV metadata export.
+   - **System Monitoring:** Real-time health ping, Express runtime diagnostics, MongoDB status gauge, Python analysis
+     bridge state, memory allocation bars, and event logging.
+   - **Audit Logs:** Tamper-evident administrative audit trail with action filtering, date ranges, and payload inspection.
+   - **Security & Access:** Active administrators ledger, session token parameters, and explicit RBAC permission matrix.
+   - **Dataset Management:** In-browser controls for seeding and safely clearing synthetic demonstration data (`@example.com`).
+   - **Settings:** Visual theme preferences (Dark Navy & Violet / Light), default pagination size, and auto-refresh intervals.
+2. **Visual Hierarchy & Premium Design:** Features a dark navy palette with blue-violet and emerald accents, collapsible
+   sidebar (256px to 72px), topbar with live health pill, notification popover, profile trigger, floating toasts,
+   interpolated number-counting metric animations, and skeleton loading cards.
+3. **Admin Immunity Enforcement:** Dataset management tools explicitly filter `role: { $ne: 'admin' }`, ensuring that
+   clearing demo records can never inadvertently delete or modify administrator profiles.
+4. **Preservation of User Portal:** The regular user dashboard (`/pages/dashboard.html`) and personal finance views remain
+   completely intact and isolated in their own user-facing experience.
+
+
+

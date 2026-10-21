@@ -13,7 +13,8 @@ exports.register = asyncHandler(async (req, res) => {
 
 /** POST /api/auth/login -> 200 { user, token } */
 exports.login = asyncHandler(async (req, res) => {
-  const { user, token } = await authService.login(pick(req.body, ['email', 'password']));
+  const reqMeta = { ip: req.ip || req.connection.remoteAddress || '', userAgent: req.get('user-agent') || '' };
+  const { user, token } = await authService.login(pick(req.body, ['email', 'password']), reqMeta);
   res.status(200).json({ success: true, data: { user, token } });
 });
 
@@ -23,9 +24,30 @@ exports.login = asyncHandler(async (req, res) => {
  * This endpoint needs no valid token on purpose: a client with an expired token must still be
  * able to log out cleanly. It exists for API completeness and so the client has one call to make.
  */
-exports.logout = (req, res) => {
+exports.logout = asyncHandler(async (req, res) => {
+  if (req.headers && req.headers.authorization && req.headers.authorization.startsWith('Bearer ')) {
+    try {
+      const token = req.headers.authorization.split(' ')[1];
+      const decoded = authService.verifyToken(token);
+      if (decoded && decoded.id) {
+        const User = require('../models/User');
+        const user = await User.findById(decoded.id).select('email role');
+        if (user && user.role === 'admin') {
+          const AuditLog = require('../models/AuditLog');
+          await AuditLog.create({
+            adminId: user._id,
+            adminEmail: user.email,
+            action: 'ADMIN_LOGOUT',
+            details: { message: 'Administrator logged out' },
+            ipAddress: req.ip || req.connection.remoteAddress || '',
+            userAgent: req.get('user-agent') || '',
+          }).catch(() => {});
+        }
+      }
+    } catch (_) {}
+  }
   res.status(200).json({ success: true, message: 'Logged out. The client should discard its token.' });
-};
+});
 
 /** GET /api/auth/me (protected) -> the authenticated user's own profile */
 exports.me = (req, res) => {

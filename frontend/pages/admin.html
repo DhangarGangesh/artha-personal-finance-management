@@ -1,0 +1,923 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Admin Portal - ARTHA</title>
+  <script src="/js/theme.js"></script>
+  <link rel="stylesheet" href="/css/variables.css">
+  <link rel="stylesheet" href="/css/base.css">
+  <link rel="stylesheet" href="/css/admin.css">
+</head>
+<body class="admin-body">
+  <!-- Toast Notification Container -->
+  <div id="admin-toast-container" class="admin-toast-container" aria-live="polite"></div>
+
+  <!-- Loading Overlay -->
+  <div id="admin-global-loader" class="admin-loader-overlay">
+    <div class="admin-spinner"></div>
+    <p>Authenticating Administrator Session...</p>
+  </div>
+
+  <!-- Load Error Message -->
+  <div id="load-error" class="admin-error-banner" role="alert" hidden></div>
+
+  <!-- Admin Layout App Shell -->
+  <div id="protected-content" class="admin-layout" hidden>
+    
+    <!-- SIDEBAR NAVIGATION -->
+    <aside id="admin-sidebar" class="admin-sidebar">
+      <div class="admin-sidebar__header">
+        <a href="/pages/admin.html" class="admin-brand">
+          <div class="admin-brand__logo">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+            </svg>
+          </div>
+          <div class="admin-brand__text">
+            <span class="admin-brand__title">ARTHA</span>
+            <span class="admin-brand__badge">ADMIN</span>
+          </div>
+        </a>
+        <button id="sidebar-toggle-btn" class="admin-sidebar__collapse-btn" type="button" aria-label="Toggle sidebar collapse" title="Toggle sidebar">
+          <svg class="icon-collapse" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="15 18 9 12 15 6"></polyline>
+          </svg>
+        </button>
+      </div>
+
+      <nav class="admin-sidebar__nav" aria-label="Admin Navigation">
+        <div class="admin-nav-group-title">MAIN GOVERNANCE</div>
+        
+        <button class="admin-nav-item is-active" data-view="overview" type="button" title="Overview">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="3" width="7" height="9"></rect>
+            <rect x="14" y="3" width="7" height="5"></rect>
+            <rect x="14" y="12" width="7" height="9"></rect>
+            <rect x="3" y="16" width="7" height="5"></rect>
+          </svg>
+          <span class="admin-nav-item__text">Overview</span>
+        </button>
+
+        <button class="admin-nav-item" data-view="users" type="button" title="User Management">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+            <circle cx="9" cy="7" r="4"></circle>
+            <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+            <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+          </svg>
+          <span class="admin-nav-item__text">User Management</span>
+          <span class="admin-nav-item__badge" id="nav-user-count">-</span>
+        </button>
+
+        <button class="admin-nav-item" data-view="monitoring" type="button" title="System Monitoring">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+          </svg>
+          <span class="admin-nav-item__text">System Monitoring</span>
+          <span class="admin-status-dot is-online" title="Operational"></span>
+        </button>
+
+        <button class="admin-nav-item" data-view="audit" type="button" title="Audit Logs">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+            <polyline points="14 2 14 8 20 8"></polyline>
+            <line x1="16" y1="13" x2="8" y2="13"></line>
+            <line x1="16" y1="17" x2="8" y2="17"></line>
+            <polyline points="10 9 9 9 8 9"></polyline>
+          </svg>
+          <span class="admin-nav-item__text">Audit Logs</span>
+        </button>
+
+        <div class="admin-nav-group-title" style="margin-top: 14px;">SECURITY & SYSTEM</div>
+
+        <button class="admin-nav-item" data-view="security" type="button" title="Security & Access">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+            <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+          </svg>
+          <span class="admin-nav-item__text">Security & Access</span>
+        </button>
+
+        <button class="admin-nav-item" data-view="dataset" type="button" title="Dataset Management">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <ellipse cx="12" cy="5" rx="9" ry="3"></ellipse>
+            <path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"></path>
+            <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"></path>
+          </svg>
+          <span class="admin-nav-item__text">Dataset Management</span>
+        </button>
+
+        <button class="admin-nav-item" data-view="settings" type="button" title="Settings">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="3"></circle>
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+          </svg>
+          <span class="admin-nav-item__text">Settings</span>
+        </button>
+      </nav>
+
+      <!-- Sidebar User Footer -->
+      <div class="admin-sidebar__footer">
+        <a href="/pages/dashboard.html" class="admin-portal-switch" title="Switch to User Personal Finance Portal">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+            <polyline points="15 3 21 3 21 9"></polyline>
+            <line x1="10" y1="14" x2="21" y2="3"></line>
+          </svg>
+          <span class="admin-portal-switch__text">User Finance Portal</span>
+        </a>
+      </div>
+    </aside>
+
+    <!-- MAIN WRAPPER -->
+    <div class="admin-main-wrapper">
+      
+      <!-- TOP HEADER -->
+      <header class="admin-topbar">
+        <div class="admin-topbar__left">
+          <button id="mobile-menu-btn" class="admin-icon-btn admin-mobile-toggle" type="button" aria-label="Open mobile menu">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="3" y1="12" x2="21" y2="12"></line>
+              <line x1="3" y1="6" x2="21" y2="6"></line>
+              <line x1="3" y1="18" x2="21" y2="18"></line>
+            </svg>
+          </button>
+          <div class="admin-breadcrumbs">
+            <span class="admin-breadcrumb-root">Admin Portal</span>
+            <span class="admin-breadcrumb-sep">/</span>
+            <span id="current-view-title" class="admin-breadcrumb-current">Overview</span>
+          </div>
+        </div>
+
+        <div class="admin-topbar__right">
+          <!-- System Status Live Badge -->
+          <div class="admin-health-pill" id="topbar-health-pill" title="Backend operational">
+            <span class="admin-status-dot is-online"></span>
+            <span class="admin-health-pill__text" id="topbar-health-text">System Healthy</span>
+          </div>
+
+          <!-- Theme Toggle -->
+          <button id="theme-toggle-btn" class="admin-icon-btn" type="button" aria-label="Toggle Light/Dark Theme" title="Toggle Theme">
+            <svg class="icon-sun" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="5"></circle>
+              <line x1="12" y1="1" x2="12" y2="3"></line>
+              <line x1="12" y1="21" x2="12" y2="23"></line>
+              <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+              <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+              <line x1="1" y1="12" x2="3" y2="12"></line>
+              <line x1="21" y1="12" x2="23" y2="12"></line>
+              <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+              <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+            </svg>
+          </button>
+
+          <!-- Notifications Button & Popover -->
+          <div class="admin-popover-anchor">
+            <button id="notif-btn" class="admin-icon-btn" type="button" aria-label="Notifications" title="Notifications">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+                <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+              </svg>
+              <span id="notif-badge" class="admin-badge-indicator"></span>
+            </button>
+            <div id="notif-dropdown" class="admin-dropdown-menu admin-notif-menu" hidden>
+              <div class="admin-notif-menu__head">
+                <h4>System Notifications</h4>
+                <button id="notif-clear-btn" class="btn-text-action" type="button">Mark Read</button>
+              </div>
+              <div id="notif-list" class="admin-notif-list">
+                <div class="admin-notif-empty">No unread alerts</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Admin Profile Dropdown -->
+          <div class="admin-popover-anchor">
+            <button id="admin-profile-btn" class="admin-profile-trigger" type="button" aria-label="Admin Profile Menu">
+              <div id="topbar-avatar" class="admin-avatar">AD</div>
+              <div class="admin-profile-trigger__meta">
+                <span id="topbar-admin-name" class="admin-profile-trigger__name">Administrator</span>
+                <span class="admin-profile-trigger__role">Superadmin</span>
+              </div>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="6 9 12 15 18 9"></polyline>
+              </svg>
+            </button>
+            <div id="admin-profile-dropdown" class="admin-dropdown-menu admin-profile-menu" hidden>
+              <div class="admin-profile-menu__info">
+                <strong id="dropdown-admin-name">Administrator</strong>
+                <span id="dropdown-admin-email" class="text-muted">admin@artha.local</span>
+                <span class="status-pill status-pill--admin" style="align-self: flex-start; margin-top: 6px;">Admin Role</span>
+              </div>
+              <div class="admin-dropdown-divider"></div>
+              <a href="/pages/dashboard.html" class="admin-dropdown-item">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path></svg>
+                Personal Finance Portal
+              </a>
+              <button id="btn-quick-settings" class="admin-dropdown-item" type="button">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+                Admin Preferences
+              </button>
+              <div class="admin-dropdown-divider"></div>
+              <button id="btn-admin-logout" class="admin-dropdown-item text-danger" type="button">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+                Sign Out
+              </button>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <!-- STRICT PRIVACY NOTICE BANNER -->
+      <div class="admin-privacy-banner" role="note" aria-label="Privacy Mandate">
+        <div class="admin-privacy-banner__icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+          </svg>
+        </div>
+        <div class="admin-privacy-banner__text">
+          <strong>Strict Privacy Boundary Enforced:</strong>
+          <span>Administrators are architecturally restricted from querying or viewing individual users' transactions, bank details, budgets, goals, alerts, or financial figures. Only privacy-preserving metadata and global aggregates are accessible.</span>
+        </div>
+      </div>
+
+      <!-- MAIN SCROLLABLE CONTENT -->
+      <main class="admin-content-area">
+
+        <!-- ========================================== -->
+        <!-- VIEW 1: OVERVIEW                           -->
+        <!-- ========================================== -->
+        <section id="view-overview" class="admin-view-pane is-active">
+          <div class="admin-view-header">
+            <div>
+              <h2>Executive Governance Overview</h2>
+              <p class="admin-view-subtitle">High-level account distributions, real-time activity metrics, and platform telemetry.</p>
+            </div>
+            <div class="admin-view-actions">
+              <button id="btn-refresh-overview" class="admin-btn admin-btn--secondary" type="button">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 4v6h-6"></path><path d="M1 20v-6h6"></path><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
+                Refresh Data
+              </button>
+            </div>
+          </div>
+
+          <!-- KPI Metric Cards Grid -->
+          <div class="admin-kpi-grid" id="overview-kpis">
+            <div class="admin-kpi-card skeleton-card"></div>
+            <div class="admin-kpi-card skeleton-card"></div>
+            <div class="admin-kpi-card skeleton-card"></div>
+            <div class="admin-kpi-card skeleton-card"></div>
+          </div>
+
+          <!-- Charts Row -->
+          <div class="admin-grid-2col" style="margin-top: 24px;">
+            <div class="admin-panel-card">
+              <div class="admin-panel-card__head">
+                <div>
+                  <h3>User Registration Growth</h3>
+                  <p class="text-muted">Monthly account creations over the last 6 months</p>
+                </div>
+                <span class="admin-tag">Monthly Trend</span>
+              </div>
+              <div class="admin-chart-wrap">
+                <canvas id="registration-chart"></canvas>
+              </div>
+            </div>
+
+            <div class="admin-panel-card">
+              <div class="admin-panel-card__head">
+                <div>
+                  <h3>Account Status Distribution</h3>
+                  <p class="text-muted">Proportion of active vs suspended users</p>
+                </div>
+                <span class="admin-tag">Governance</span>
+              </div>
+              <div class="admin-chart-wrap admin-chart-donut-wrap">
+                <canvas id="status-distribution-chart"></canvas>
+              </div>
+            </div>
+          </div>
+
+          <!-- Platform Activity & Recent Administrative Actions -->
+          <div class="admin-grid-2col" style="margin-top: 24px;">
+            <div class="admin-panel-card">
+              <div class="admin-panel-card__head">
+                <div>
+                  <h3>Application Usage & Ledger Activity</h3>
+                  <p class="text-muted">Total recorded platform entities (counts only, no monetary values)</p>
+                </div>
+              </div>
+              <div class="admin-chart-wrap">
+                <canvas id="activity-chart"></canvas>
+              </div>
+            </div>
+
+            <div class="admin-panel-card">
+              <div class="admin-panel-card__head">
+                <div>
+                  <h3>Recent Administrative Activities</h3>
+                  <p class="text-muted">Latest security events and moderation records</p>
+                </div>
+                <button id="btn-jump-to-audit" class="btn-text-action" type="button">View All Logs &rarr;</button>
+              </div>
+              <div class="admin-table-responsive">
+                <table class="admin-table">
+                  <thead>
+                    <tr>
+                      <th>Time</th>
+                      <th>Action</th>
+                      <th>Target</th>
+                      <th>Admin</th>
+                    </tr>
+                  </thead>
+                  <tbody id="overview-recent-audit">
+                    <tr><td colspan="4" class="text-center py-4 text-muted">Loading audit entries...</td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ========================================== -->
+        <!-- VIEW 2: USER MANAGEMENT                     -->
+        <!-- ========================================== -->
+        <section id="view-users" class="admin-view-pane" hidden>
+          <div class="admin-view-header">
+            <div>
+              <h2>User Account Management</h2>
+              <p class="admin-view-subtitle">Search, filter, paginate, and moderate registered user accounts under strict privacy safeguards.</p>
+            </div>
+            <div class="admin-view-actions">
+              <button id="btn-export-users-csv" class="admin-btn admin-btn--secondary" type="button">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                Export CSV
+              </button>
+              <button id="btn-refresh-users" class="admin-btn admin-btn--primary" type="button">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 4v6h-6"></path><path d="M1 20v-6h6"></path><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
+                Refresh
+              </button>
+            </div>
+          </div>
+
+          <!-- Filter Toolbar -->
+          <div class="admin-filter-toolbar">
+            <div class="admin-search-field">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+              <input type="text" id="user-search-input" placeholder="Search by name, email, or account ID..." aria-label="Search users">
+            </div>
+
+            <div class="admin-toolbar-controls">
+              <select id="user-filter-status" class="admin-select" aria-label="Filter status">
+                <option value="all">Status: All</option>
+                <option value="active">Active Accounts</option>
+                <option value="suspended">Suspended Accounts</option>
+              </select>
+
+              <select id="user-filter-role" class="admin-select" aria-label="Filter role">
+                <option value="all">Role: All</option>
+                <option value="user">Regular Users</option>
+                <option value="admin">Administrators</option>
+              </select>
+
+              <select id="user-sort-select" class="admin-select" aria-label="Sort users">
+                <option value="createdAt-desc">Joined: Newest</option>
+                <option value="createdAt-asc">Joined: Oldest</option>
+                <option value="name-asc">Name (A-Z)</option>
+                <option value="email-asc">Email (A-Z)</option>
+                <option value="lastLoginAt-desc">Recent Login</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- User Table Card -->
+          <div class="admin-panel-card" style="margin-top: 16px;">
+            <div class="admin-table-responsive">
+              <table class="admin-table" id="users-master-table">
+                <thead>
+                  <tr>
+                    <th>User</th>
+                    <th>Email Address</th>
+                    <th>Role</th>
+                    <th>Status</th>
+                    <th>Registration Date</th>
+                    <th>Last Active</th>
+                    <th class="text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody id="users-table-tbody">
+                  <!-- Rendered dynamically -->
+                </tbody>
+              </table>
+            </div>
+
+            <!-- Pagination Bar -->
+            <div class="admin-pagination-bar" id="users-pagination">
+              <span class="admin-pagination-info" id="users-page-info">Showing 0 of 0 users</span>
+              <div class="admin-pagination-buttons">
+                <button id="users-prev-btn" class="admin-btn admin-btn--sm" type="button" disabled>&larr; Prev</button>
+                <span id="users-page-number" class="admin-page-badge">Page 1</span>
+                <button id="users-next-btn" class="admin-btn admin-btn--sm" type="button" disabled>Next &rarr;</button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ========================================== -->
+        <!-- VIEW 3: SYSTEM MONITORING                   -->
+        <!-- ========================================== -->
+        <section id="view-monitoring" class="admin-view-pane" hidden>
+          <div class="admin-view-header">
+            <div>
+              <h2>System Health & Diagnostic Telemetry</h2>
+              <p class="admin-view-subtitle">Live health-check verification, process metrics, database connectivity, and Python engine status.</p>
+            </div>
+            <div class="admin-view-actions">
+              <button id="btn-run-diagnostics" class="admin-btn admin-btn--primary" type="button">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>
+                Run Live Diagnostics Ping
+              </button>
+            </div>
+          </div>
+
+          <!-- Health Status Cards -->
+          <div class="admin-kpi-grid" id="monitoring-gauges">
+            <!-- Populated dynamically -->
+          </div>
+
+          <!-- Deep Diagnostics Grid -->
+          <div class="admin-grid-2col" style="margin-top: 24px;">
+            <div class="admin-panel-card">
+              <div class="admin-panel-card__head">
+                <h3>Backend Runtime Environment</h3>
+                <span class="admin-status-badge is-ok">Express 5 Healthy</span>
+              </div>
+              <div class="admin-spec-list" id="server-specs-list">
+                <!-- Specs loaded dynamically -->
+              </div>
+            </div>
+
+            <div class="admin-panel-card">
+              <div class="admin-panel-card__head">
+                <h3>MongoDB Database Cluster</h3>
+                <span class="admin-status-badge is-ok" id="db-health-badge">Connected</span>
+              </div>
+              <div class="admin-spec-list" id="database-specs-list">
+                <!-- Specs loaded dynamically -->
+              </div>
+            </div>
+          </div>
+
+          <div class="admin-grid-2col" style="margin-top: 24px;">
+            <div class="admin-panel-card">
+              <div class="admin-panel-card__head">
+                <h3>Python Statistical Analysis Sidecar</h3>
+                <span class="admin-status-badge is-ok" id="py-health-badge">Python Ready</span>
+              </div>
+              <div class="admin-spec-list" id="python-specs-list">
+                <!-- Specs loaded dynamically -->
+              </div>
+            </div>
+
+            <div class="admin-panel-card">
+              <div class="admin-panel-card__head">
+                <h3>Memory & Process Allocation</h3>
+                <span class="admin-tag">V8 Engine</span>
+              </div>
+              <div class="admin-memory-meter" id="memory-meter-container">
+                <!-- Memory bars populated dynamically -->
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ========================================== -->
+        <!-- VIEW 4: AUDIT LOGS                          -->
+        <!-- ========================================== -->
+        <section id="view-audit" class="admin-view-pane" hidden>
+          <div class="admin-view-header">
+            <div>
+              <h2>Administrative Audit Trail</h2>
+              <p class="admin-view-subtitle">Tamper-evident, chronological log of administrative operations, security changes, and moderation events.</p>
+            </div>
+            <div class="admin-view-actions">
+              <button id="btn-refresh-audit" class="admin-btn admin-btn--secondary" type="button">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 4v6h-6"></path><path d="M1 20v-6h6"></path><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
+                Refresh Logs
+              </button>
+            </div>
+          </div>
+
+          <!-- Audit Filters -->
+          <div class="admin-filter-toolbar">
+            <div class="admin-search-field">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+              <input type="text" id="audit-search-input" placeholder="Search by email, action, reason, or details..." aria-label="Search logs">
+            </div>
+
+            <div class="admin-toolbar-controls">
+              <select id="audit-filter-action" class="admin-select" aria-label="Filter action">
+                <option value="all">Action: All Events</option>
+                <option value="ADMIN_LOGIN">ADMIN_LOGIN</option>
+                <option value="ADMIN_LOGOUT">ADMIN_LOGOUT</option>
+                <option value="USER_SUSPENDED">USER_SUSPENDED</option>
+                <option value="USER_ACTIVATED">USER_ACTIVATED</option>
+                <option value="ROLE_CHANGED">ROLE_CHANGED</option>
+                <option value="DATASET_SEEDED">DATASET_SEEDED</option>
+                <option value="DATASET_CLEARED">DATASET_CLEARED</option>
+                <option value="ADMIN_BOOTSTRAP">ADMIN_BOOTSTRAP</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Audit Table Card -->
+          <div class="admin-panel-card" style="margin-top: 16px;">
+            <div class="admin-table-responsive">
+              <table class="admin-table">
+                <thead>
+                  <tr>
+                    <th>Timestamp</th>
+                    <th>Administrator</th>
+                    <th>Event / Action</th>
+                    <th>Target User</th>
+                    <th>Event Details & Reason</th>
+                    <th>IP / Client Agent</th>
+                    <th class="text-right">Action</th>
+                  </tr>
+                </thead>
+                <tbody id="audit-table-tbody">
+                  <!-- Populated dynamically -->
+                </tbody>
+              </table>
+            </div>
+
+            <div class="admin-pagination-bar" id="audit-pagination">
+              <span class="admin-pagination-info" id="audit-page-info">Showing 0 of 0 log entries</span>
+              <div class="admin-pagination-buttons">
+                <button id="audit-prev-btn" class="admin-btn admin-btn--sm" type="button" disabled>&larr; Prev</button>
+                <span id="audit-page-number" class="admin-page-badge">Page 1</span>
+                <button id="audit-next-btn" class="admin-btn admin-btn--sm" type="button" disabled>Next &rarr;</button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ========================================== -->
+        <!-- VIEW 5: SECURITY & ACCESS                   -->
+        <!-- ========================================== -->
+        <section id="view-security" class="admin-view-pane" hidden>
+          <div class="admin-view-header">
+            <div>
+              <h2>Security Architecture & Role Governance</h2>
+              <p class="admin-view-subtitle">Supervise authorized administrator accounts, role privileges, and RBAC defense barriers.</p>
+            </div>
+          </div>
+
+          <!-- Active Admins Grid -->
+          <div class="admin-grid-2col">
+            <div class="admin-panel-card">
+              <div class="admin-panel-card__head">
+                <div>
+                  <h3>Authorized Administrators</h3>
+                  <p class="text-muted">Accounts possessing elevated system governance privileges</p>
+                </div>
+                <span class="admin-tag">RBAC: Admin</span>
+              </div>
+              <div class="admin-admins-list" id="authorized-admins-list">
+                <!-- Populated dynamically -->
+              </div>
+            </div>
+
+            <div class="admin-panel-card">
+              <div class="admin-panel-card__head">
+                <div>
+                  <h3>Current Admin Session</h3>
+                  <p class="text-muted">Active JWT authentication token parameters</p>
+                </div>
+                <span class="admin-status-badge is-ok">Active Token</span>
+              </div>
+              <div class="admin-spec-list" id="session-security-specs">
+                <!-- Populated dynamically -->
+              </div>
+            </div>
+          </div>
+
+          <!-- Role & Permissions Matrix -->
+          <div class="admin-panel-card" style="margin-top: 24px;">
+            <div class="admin-panel-card__head">
+              <div>
+                <h3>Role-Based Access Control (RBAC) Matrix</h3>
+                <p class="text-muted">Enforced server-side via JWT authentication and role-checking middleware</p>
+              </div>
+            </div>
+            <div class="admin-table-responsive">
+              <table class="admin-table">
+                <thead>
+                  <tr>
+                    <th>Platform Capability / Route Scope</th>
+                    <th>Standard User (`user`)</th>
+                    <th>Administrator (`admin`)</th>
+                    <th>Security Enforcement Mechanism</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><strong>Personal Financial Records</strong> (Transactions, Budgets, Goals)</td>
+                    <td><span class="status-pill status-pill--active">Full Read / Write</span></td>
+                    <td><span class="status-pill status-pill--suspended">Zero Access (Isolated)</span></td>
+                    <td>Strictly scoped to <code>{ userId: req.user._id }</code>; Admin has no access.</td>
+                  </tr>
+                  <tr>
+                    <td><strong>Admin Dashboard & Platform Telemetry</strong> (<code>/api/admin/*</code>)</td>
+                    <td><span class="status-pill status-pill--suspended">Forbidden (403)</span></td>
+                    <td><span class="status-pill status-pill--active">Authorized</span></td>
+                    <td>Protected by <code>requireAdmin</code> middleware.</td>
+                  </tr>
+                  <tr>
+                    <td><strong>User Moderation</strong> (Status Suspension / Activation)</td>
+                    <td><span class="status-pill status-pill--suspended">Unauthorized</span></td>
+                    <td><span class="status-pill status-pill--active">Authorized</span></td>
+                    <td>All state transitions recorded in immutable <code>audit_logs</code>.</td>
+                  </tr>
+                  <tr>
+                    <td><strong>Admin Self-Demotion / Self-Suspension</strong></td>
+                    <td><span class="status-pill">N/A</span></td>
+                    <td><span class="status-pill status-pill--suspended">Forbidden</span></td>
+                    <td>Self-protection checks block self-demotion or sole admin removal.</td>
+                  </tr>
+                  <tr>
+                    <td><strong>Synthetic Dataset Seeding</strong></td>
+                    <td><span class="status-pill status-pill--suspended">Forbidden</span></td>
+                    <td><span class="status-pill status-pill--active">Authorized</span></td>
+                    <td>Restricted to development/test; blocked if <code>NODE_ENV === 'production'</code>.</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- ========================================== -->
+        <!-- VIEW 6: DATASET MANAGEMENT                  -->
+        <!-- ========================================== -->
+        <section id="view-dataset" class="admin-view-pane" hidden>
+          <div class="admin-view-header">
+            <div>
+              <h2>Synthetic Demonstration Dataset Management</h2>
+              <p class="admin-view-subtitle">Generate, seed, inspect, and safely clean realistic synthetic financial demonstration records.</p>
+            </div>
+            <div class="admin-view-actions">
+              <button id="btn-seed-dataset" class="admin-btn admin-btn--primary" type="button">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
+                Seed Synthetic Dataset
+              </button>
+              <button id="btn-clear-dataset" class="admin-btn admin-btn--danger" type="button">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                Clean Demo Records
+              </button>
+            </div>
+          </div>
+
+          <!-- Dataset Status KPI Cards -->
+          <div class="admin-kpi-grid" id="dataset-kpi-grid">
+            <!-- Populated dynamically -->
+          </div>
+
+          <!-- Demo Profiles Quick Card -->
+          <div class="admin-grid-2col" style="margin-top: 24px;">
+            <div class="admin-panel-card">
+              <div class="admin-panel-card__head">
+                <div>
+                  <h3>Testing Credentials Reference</h3>
+                  <p class="text-muted">Fictional demonstration personas ready for presentation & testing</p>
+                </div>
+              </div>
+              <div class="admin-demo-accounts-grid">
+                <div class="admin-demo-account-item">
+                  <div class="admin-demo-account-item__role">Active Demo User</div>
+                  <strong>aarav.sharma@example.com</strong>
+                  <span class="text-muted">Password: <code>DemoUser123</code></span>
+                  <p>6-month transaction history, active category budgets, and savings goals.</p>
+                </div>
+                <div class="admin-demo-account-item">
+                  <div class="admin-demo-account-item__role text-danger">Suspended Demo User</div>
+                  <strong>pooja.reddy@example.com</strong>
+                  <span class="text-muted">Password: <code>DemoUser123</code></span>
+                  <p>Suspended demo account for demonstrating 403 Forbidden login lockout.</p>
+                </div>
+                <div class="admin-demo-account-item">
+                  <div class="admin-demo-account-item__role text-primary">System Administrator</div>
+                  <strong>admin@artha.local</strong>
+                  <span class="text-muted">Password: <code>AdminPassword123</code></span>
+                  <p>Full administrative privileges for system governance and telemetry.</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="admin-panel-card">
+              <div class="admin-panel-card__head">
+                <div>
+                  <h3>Dataset Integrity & Safeguards</h3>
+                  <p class="text-muted">Idempotency guarantees and production safety policies</p>
+                </div>
+              </div>
+              <div class="admin-spec-list">
+                <div class="admin-spec-row">
+                  <span>Scope Filter</span>
+                  <strong>Emails ending in <code>@example.com</code></strong>
+                </div>
+                <div class="admin-spec-row">
+                  <span>Production Safeguard</span>
+                  <strong class="text-success">Hard-blocked if NODE_ENV=production</strong>
+                </div>
+                <div class="admin-spec-row">
+                  <span>Administrator Immunity</span>
+                  <strong>Admins never deleted or altered</strong>
+                </div>
+                <div class="admin-spec-row">
+                  <span>Idempotency Strategy</span>
+                  <strong>Deterministic replacement without full DB drop</strong>
+                </div>
+                <div class="admin-spec-row">
+                  <span>Password Hash Optimization</span>
+                  <strong>Precomputed Bcrypt (10 rounds) for &lt;1s speed</strong>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- ========================================== -->
+        <!-- VIEW 7: SETTINGS                            -->
+        <!-- ========================================== -->
+        <section id="view-settings" class="admin-view-pane" hidden>
+          <div class="admin-view-header">
+            <div>
+              <h2>Administrator Settings & Environment</h2>
+              <p class="admin-view-subtitle">Console preferences, platform configuration metadata, and session settings.</p>
+            </div>
+          </div>
+
+          <div class="admin-grid-2col">
+            <div class="admin-panel-card">
+              <div class="admin-panel-card__head">
+                <h3>Console Preferences</h3>
+                <p class="text-muted">Customize your administrative console experience</p>
+              </div>
+              <div class="admin-settings-form">
+                <div class="admin-form-group">
+                  <label for="settings-theme-select">Visual Theme</label>
+                  <select id="settings-theme-select" class="admin-select">
+                    <option value="system">Follow System</option>
+                    <option value="dark">Dark Theme (Navy & Violet)</option>
+                    <option value="light">Light Theme</option>
+                  </select>
+                </div>
+                <div class="admin-form-group">
+                  <label for="settings-page-size">Default Table Page Size</label>
+                  <select id="settings-page-size" class="admin-select">
+                    <option value="10">10 entries per page</option>
+                    <option value="20" selected>20 entries per page</option>
+                    <option value="50">50 entries per page</option>
+                  </select>
+                </div>
+                <div class="admin-form-group">
+                  <label for="settings-autorefresh">Telemetry Auto-Refresh Interval</label>
+                  <select id="settings-autorefresh" class="admin-select">
+                    <option value="0">Manual Refresh Only</option>
+                    <option value="30">Every 30 Seconds</option>
+                    <option value="60" selected>Every 60 Seconds</option>
+                    <option value="300">Every 5 Minutes</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <div class="admin-panel-card">
+              <div class="admin-panel-card__head">
+                <h3>Deployment Environment & Version</h3>
+                <p class="text-muted">Platform versioning and build configuration</p>
+              </div>
+              <div class="admin-spec-list">
+                <div class="admin-spec-row">
+                  <span>Application</span>
+                  <strong>Artha Personal Finance Management</strong>
+                </div>
+                <div class="admin-spec-row">
+                  <span>Version</span>
+                  <strong>0.1.0 (feature/admin)</strong>
+                </div>
+                <div class="admin-spec-row">
+                  <span>Runtime Stack</span>
+                  <strong>Node.js, Express 5, MongoDB, Python 3</strong>
+                </div>
+                <div class="admin-spec-row">
+                  <span>Research Paper Alignment</span>
+                  <strong>S.P.I.T. Mumbai (2026)</strong>
+                </div>
+                <div class="admin-spec-row">
+                  <span>Security Baseline</span>
+                  <strong>OWASP RBAC, HS256, Bcrypt Cost 12</strong>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+      </main>
+    </div>
+  </div>
+
+  <!-- ========================================== -->
+  <!-- MODAL: ACTION CONFIRMATION (STATUS / ROLE) -->
+  <!-- ========================================== -->
+  <div id="admin-action-modal" class="admin-modal-backdrop" hidden>
+    <div class="admin-modal-dialog" role="dialog" aria-modal="true" aria-labelledby="modal-action-title">
+      <div class="admin-modal-header">
+        <h3 id="modal-action-title">Confirm Administrative Action</h3>
+        <button id="modal-action-close-btn" class="admin-icon-btn" type="button" aria-label="Close modal">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+        </button>
+      </div>
+      <div class="admin-modal-body">
+        <p id="modal-action-desc" class="modal-desc-text">Action details</p>
+        <div class="admin-form-group" id="modal-reason-group">
+          <label for="modal-action-reason">Reason / Note <span class="text-muted">(Will be recorded in Audit Log)</span>:</label>
+          <input type="text" id="modal-action-reason" class="admin-input" placeholder="e.g. Terms of service violation, administrative request">
+        </div>
+      </div>
+      <div class="admin-modal-footer">
+        <button id="modal-action-cancel-btn" class="admin-btn admin-btn--secondary" type="button">Cancel</button>
+        <button id="modal-action-confirm-btn" class="admin-btn admin-btn--primary" type="button">Confirm Action</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================== -->
+  <!-- MODAL: USER MODERATION HISTORY             -->
+  <!-- ========================================== -->
+  <div id="admin-history-modal" class="admin-modal-backdrop" hidden>
+    <div class="admin-modal-dialog admin-modal-dialog--lg" role="dialog" aria-modal="true" aria-labelledby="modal-history-title">
+      <div class="admin-modal-header">
+        <div>
+          <h3 id="modal-history-title">Account Moderation History</h3>
+          <p id="modal-history-subtitle" class="text-muted" style="margin: 0; font-size: 0.85rem;">Audit events for user</p>
+        </div>
+        <button id="modal-history-close-btn" class="admin-icon-btn" type="button" aria-label="Close modal">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+        </button>
+      </div>
+      <div class="admin-modal-body" style="max-height: 400px; overflow-y: auto;">
+        <div class="admin-table-responsive">
+          <table class="admin-table">
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Administrator</th>
+                <th>Action</th>
+                <th>Details</th>
+              </tr>
+            </thead>
+            <tbody id="modal-history-tbody">
+              <!-- Dynamically populated -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="admin-modal-footer">
+        <button id="modal-history-done-btn" class="admin-btn admin-btn--secondary" type="button">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================== -->
+  <!-- MODAL: AUDIT EVENT INSPECTION              -->
+  <!-- ========================================== -->
+  <div id="admin-audit-modal" class="admin-modal-backdrop" hidden>
+    <div class="admin-modal-dialog" role="dialog" aria-modal="true" aria-labelledby="modal-audit-title">
+      <div class="admin-modal-header">
+        <h3 id="modal-audit-title">Audit Event Inspection</h3>
+        <button id="modal-audit-close-btn" class="admin-icon-btn" type="button" aria-label="Close modal">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+        </button>
+      </div>
+      <div class="admin-modal-body">
+        <div class="admin-spec-list" id="modal-audit-spec-list"></div>
+        <h4 style="margin: 16px 0 8px 0; font-size: 0.9rem;">Payload Details</h4>
+        <pre id="modal-audit-payload" class="admin-code-block"></pre>
+      </div>
+      <div class="admin-modal-footer">
+        <button id="modal-audit-done-btn" class="admin-btn admin-btn--secondary" type="button">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="/js/utils.js"></script>
+  <script src="/js/dom.js"></script>
+  <script src="/js/api.js"></script>
+  <script src="/js/auth.js"></script>
+  <script src="/vendor/chart.umd.js"></script>
+  <script src="/js/admin.js"></script>
+</body>
+</html>

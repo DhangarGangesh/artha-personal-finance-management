@@ -36,8 +36,33 @@ const authenticate = asyncHandler(async (req, res, next) => {
     throw AppError.unauthorized('The account for this token no longer exists');
   }
 
+  if (user.status === 'suspended') {
+    throw AppError.forbidden('Your account has been suspended. Please contact an administrator.');
+  }
+
   req.user = user;
   next();
 });
 
-module.exports = { authenticate };
+const requireAdmin = (req, res, next) => {
+  if (!req.user) {
+    throw AppError.unauthorized('Authentication required. Please log in.');
+  }
+  if (req.user.role !== 'admin') {
+    throw AppError.forbidden('Access denied. Administrator privileges required.');
+  }
+  next();
+};
+
+const requireRole = (...roles) => (req, res, next) => {
+  if (!req.user) {
+    throw AppError.unauthorized('Authentication required. Please log in.');
+  }
+  if (!roles.includes(req.user.role)) {
+    throw AppError.forbidden('Access denied. Insufficient permissions.');
+  }
+  next();
+};
+
+module.exports = { authenticate, requireAdmin, requireRole };
+
