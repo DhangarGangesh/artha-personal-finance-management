@@ -1,70 +1,130 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   Bell,
   Check,
   AlertTriangle,
+  AlertCircle,
   TrendingUp,
   Sparkles,
-  ShieldCheck,
   X,
   Clock,
+  ArrowRight,
+  CheckCircle2,
+  RefreshCw,
 } from 'lucide-react';
-
-const INITIAL_NOTIFICATIONS = [
-  {
-    id: 1,
-    title: 'Monthly Salary Deposited',
-    message: '₹85,000 was credited to your main account. Allocation rules applied.',
-    type: 'income',
-    time: '25m ago',
-    read: false,
-    icon: TrendingUp,
-    color: '#10b981',
-    bgColor: 'rgba(16, 185, 129, 0.15)',
-  },
-  {
-    id: 2,
-    title: 'Budget Alert: Food & Dining',
-    message: 'You have spent 86% of your monthly Food budget. Recommended daily cap: ₹450.',
-    type: 'warning',
-    time: '2h ago',
-    read: false,
-    icon: AlertTriangle,
-    color: '#f59e0b',
-    bgColor: 'rgba(245, 158, 11, 0.15)',
-  },
-  {
-    id: 3,
-    title: 'Savings Milestone Achieved',
-    message: 'You reached 70% of your "Emergency Fund" goal! Keep up the momentum.',
-    type: 'achievement',
-    time: 'Yesterday',
-    read: false,
-    icon: Sparkles,
-    color: '#8b5cf6',
-    bgColor: 'rgba(139, 92, 246, 0.15)',
-  },
-  {
-    id: 4,
-    title: 'Security Verification',
-    message: 'New session authenticated from Windows Chrome. If this wasn\'t you, check security.',
-    type: 'security',
-    time: '2 days ago',
-    read: true,
-    icon: ShieldCheck,
-    color: '#0ea5e9',
-    bgColor: 'rgba(14, 165, 233, 0.15)',
-  },
-];
+import { useAuth } from '../../context/AuthContext';
+import { financeService } from '../../services/financeService';
 
 export const NotificationPopover = () => {
+  const { user } = useAuth();
+  const navigate = useNavigate();
   const [isOpen, setIsOpen] = useState(false);
-  const [notifications, setNotifications] = useState(INITIAL_NOTIFICATIONS);
+  const [notifications, setNotifications] = useState([]);
+  const [loading, setLoading] = useState(false);
   const [filter, setFilter] = useState('all'); // 'all' | 'unread'
   const popoverRef = useRef(null);
 
-  const unreadCount = notifications.filter((n) => !n.read).length;
+  const userId = user?._id || user?.id || null;
+  const readKey = userId ? `artha_read_notifications_${userId}` : null;
+  const dismissedKey = userId ? `artha_dismissed_notifications_${userId}` : null;
 
+  const getStoredSet = useCallback((key) => {
+    if (!key) return new Set();
+    try {
+      const raw = localStorage.getItem(key);
+      return raw ? new Set(JSON.parse(raw)) : new Set();
+    } catch {
+      return new Set();
+    }
+  }, []);
+
+  const saveStoredSet = useCallback((key, set) => {
+    if (!key) return;
+    try {
+      localStorage.setItem(key, JSON.stringify(Array.from(set)));
+    } catch {
+      // Ignore storage errors
+    }
+  }, []);
+
+  const fetchAlerts = useCallback(async () => {
+    if (!userId) {
+      setNotifications([]);
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const res = await financeService.getAlerts();
+      const rawList =
+        (Array.isArray(res?.alerts) && res.alerts) ||
+        (Array.isArray(res?.data?.alerts) && res.data.alerts) ||
+        (Array.isArray(res) && res) ||
+        [];
+
+      const readSet = getStoredSet(readKey);
+      const dismissedSet = getStoredSet(dismissedKey);
+
+      const mapped = rawList
+        .map((item, idx) => {
+          const id = item.ruleId
+            ? `${item.ruleId}_${item.category || 'all'}`
+            : `alert_${idx}`;
+          const severity = (item.severity || 'INFO').toUpperCase();
+
+          let icon = Sparkles;
+          let color = 'var(--brand-primary, #6366f1)';
+          let bgColor = 'rgba(99, 102, 241, 0.12)';
+
+          if (severity === 'CRITICAL') {
+            icon = AlertCircle;
+            color = '#ef4444';
+            bgColor = 'rgba(239, 68, 68, 0.12)';
+          } else if (severity === 'WARNING') {
+            icon = AlertTriangle;
+            color = '#f59e0b';
+            bgColor = 'rgba(245, 158, 11, 0.12)';
+          } else if (item.category === 'Goals' || item.category === 'Savings') {
+            icon = TrendingUp;
+            color = '#10b981';
+            bgColor = 'rgba(16, 185, 129, 0.12)';
+          }
+
+          return {
+            id,
+            title: item.ruleName || item.category || 'Financial Alert',
+            message:
+              item.reason ||
+              item.condition ||
+              item.recommendation ||
+              'Threshold condition detected',
+            recommendation: item.recommendation,
+            category: item.category,
+            severity,
+            time: item.asOf || 'Active',
+            read: readSet.has(id),
+            icon,
+            color,
+            bgColor,
+          };
+        })
+        .filter((n) => !dismissedSet.has(n.id));
+
+      setNotifications(mapped);
+    } catch (err) {
+      console.warn('Failed to fetch user-specific notifications:', err);
+    } finally {
+      setLoading(false);
+    }
+  }, [userId, readKey, dismissedKey, getStoredSet]);
+
+  // Fetch alerts whenever user changes or mounts
+  useEffect(() => {
+    fetchAlerts();
+  }, [fetchAlerts]);
+
+  // Handle clicking outside to close
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (popoverRef.current && !popoverRef.current.contains(e.target)) {
@@ -77,18 +137,29 @@ export const NotificationPopover = () => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [isOpen]);
 
+  const unreadCount = notifications.filter((n) => !n.read).length;
+
   const markAllAsRead = () => {
     setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+    const readSet = getStoredSet(readKey);
+    notifications.forEach((n) => readSet.add(n.id));
+    saveStoredSet(readKey, readSet);
   };
 
   const markAsRead = (id) => {
     setNotifications((prev) =>
       prev.map((n) => (n.id === id ? { ...n, read: true } : n))
     );
+    const readSet = getStoredSet(readKey);
+    readSet.add(id);
+    saveStoredSet(readKey, readSet);
   };
 
   const removeNotification = (id) => {
     setNotifications((prev) => prev.filter((n) => n.id !== id));
+    const dismissedSet = getStoredSet(dismissedKey);
+    dismissedSet.add(id);
+    saveStoredSet(dismissedKey, dismissedSet);
   };
 
   const filtered = notifications.filter((n) => {
@@ -100,8 +171,12 @@ export const NotificationPopover = () => {
     <div style={{ position: 'relative' }} ref={popoverRef}>
       <button
         type="button"
-        onClick={() => setIsOpen(!isOpen)}
+        onClick={() => {
+          setIsOpen(!isOpen);
+          if (!isOpen) fetchAlerts();
+        }}
         aria-label="Notifications"
+        title="Notifications"
         style={{
           position: 'relative',
           width: '40px',
@@ -140,7 +215,7 @@ export const NotificationPopover = () => {
             position: 'absolute',
             top: 'calc(100% + 10px)',
             right: 0,
-            width: '380px',
+            width: '390px',
             maxWidth: 'calc(100vw - 2rem)',
             backgroundColor: 'var(--bg-card)',
             borderRadius: 'var(--radius-lg)',
@@ -163,7 +238,13 @@ export const NotificationPopover = () => {
             }}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <span style={{ fontWeight: 700, fontSize: '0.95rem', color: 'var(--text-primary)' }}>
+              <span
+                style={{
+                  fontWeight: 700,
+                  fontSize: '0.95rem',
+                  color: 'var(--text-primary)',
+                }}
+              >
                 Notifications
               </span>
               {unreadCount > 0 && (
@@ -181,26 +262,54 @@ export const NotificationPopover = () => {
                 </span>
               )}
             </div>
-            {unreadCount > 0 && (
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
               <button
                 type="button"
-                onClick={markAllAsRead}
+                onClick={fetchAlerts}
+                title="Refresh alerts"
+                aria-label="Refresh alerts"
+                disabled={loading}
                 style={{
                   background: 'none',
                   border: 'none',
-                  color: 'var(--brand-primary)',
-                  fontSize: '0.75rem',
-                  fontWeight: 600,
-                  cursor: 'pointer',
+                  color: 'var(--text-muted)',
+                  cursor: loading ? 'default' : 'pointer',
+                  padding: '4px',
                   display: 'flex',
                   alignItems: 'center',
-                  gap: '0.25rem',
+                  opacity: loading ? 0.5 : 0.8,
                 }}
               >
-                <Check size={12} />
-                Mark all read
+                <RefreshCw
+                  size={13}
+                  style={{
+                    animation: loading ? 'spin 1s linear infinite' : 'none',
+                  }}
+                />
               </button>
-            )}
+
+              {unreadCount > 0 && (
+                <button
+                  type="button"
+                  onClick={markAllAsRead}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    color: 'var(--brand-primary)',
+                    fontSize: '0.75rem',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.25rem',
+                  }}
+                >
+                  <Check size={12} />
+                  Mark all read
+                </button>
+              )}
+            </div>
           </div>
 
           {/* Filter Pills */}
@@ -239,7 +348,10 @@ export const NotificationPopover = () => {
                 padding: '0.2rem 0.65rem',
                 fontSize: '0.75rem',
                 fontWeight: filter === 'unread' ? 700 : 500,
-                color: filter === 'unread' ? 'var(--brand-primary)' : 'var(--text-muted)',
+                color:
+                  filter === 'unread'
+                    ? 'var(--brand-primary)'
+                    : 'var(--text-muted)',
                 cursor: 'pointer',
               }}
             >
@@ -249,7 +361,7 @@ export const NotificationPopover = () => {
 
           {/* Notification List */}
           <div style={{ maxHeight: '360px', overflowY: 'auto' }}>
-            {filtered.length === 0 ? (
+            {loading && notifications.length === 0 ? (
               <div
                 style={{
                   padding: '2.5rem 1.5rem',
@@ -258,7 +370,56 @@ export const NotificationPopover = () => {
                   fontSize: '0.85rem',
                 }}
               >
-                No {filter === 'unread' ? 'unread ' : ''}notifications
+                Checking for alerts...
+              </div>
+            ) : filtered.length === 0 ? (
+              <div
+                style={{
+                  padding: '2.5rem 1.5rem',
+                  textAlign: 'center',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  gap: '0.5rem',
+                }}
+              >
+                <div
+                  style={{
+                    width: '42px',
+                    height: '42px',
+                    borderRadius: '50%',
+                    backgroundColor: 'rgba(16, 185, 129, 0.12)',
+                    color: '#10b981',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    marginBottom: '0.25rem',
+                  }}
+                >
+                  <CheckCircle2 size={22} />
+                </div>
+                <div
+                  style={{
+                    fontWeight: 700,
+                    fontSize: '0.9rem',
+                    color: 'var(--text-primary)',
+                  }}
+                >
+                  {filter === 'unread' ? 'No unread notifications' : 'All caught up!'}
+                </div>
+                <p
+                  style={{
+                    color: 'var(--text-muted)',
+                    fontSize: '0.775rem',
+                    maxWidth: '260px',
+                    margin: 0,
+                    lineHeight: 1.4,
+                  }}
+                >
+                  {filter === 'unread'
+                    ? 'You have reviewed all active notifications for your account.'
+                    : 'No active financial alerts or warnings. Your budget and savings metrics are in healthy condition.'}
+                </p>
               </div>
             ) : (
               filtered.map((item) => {
@@ -273,7 +434,9 @@ export const NotificationPopover = () => {
                       gap: '0.85rem',
                       alignItems: 'flex-start',
                       borderBottom: '1px solid var(--border-subtle)',
-                      backgroundColor: item.read ? 'transparent' : 'rgba(99, 102, 241, 0.04)',
+                      backgroundColor: item.read
+                        ? 'transparent'
+                        : 'rgba(99, 102, 241, 0.04)',
                       cursor: 'pointer',
                       transition: 'background-color 0.15s ease',
                       position: 'relative',
@@ -302,6 +465,7 @@ export const NotificationPopover = () => {
                           alignItems: 'center',
                           justifyContent: 'space-between',
                           marginBottom: '0.15rem',
+                          gap: '0.5rem',
                         }}
                       >
                         <h4
@@ -309,6 +473,10 @@ export const NotificationPopover = () => {
                             fontSize: '0.825rem',
                             fontWeight: item.read ? 600 : 700,
                             color: 'var(--text-primary)',
+                            margin: 0,
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            whiteSpace: 'nowrap',
                           }}
                         >
                           {item.title}
@@ -320,6 +488,7 @@ export const NotificationPopover = () => {
                             display: 'flex',
                             alignItems: 'center',
                             gap: '0.2rem',
+                            flexShrink: 0,
                           }}
                         >
                           <Clock size={10} />
@@ -331,11 +500,26 @@ export const NotificationPopover = () => {
                           fontSize: '0.775rem',
                           color: 'var(--text-secondary)',
                           lineHeight: 1.4,
-                          marginBottom: 0,
+                          margin: 0,
                         }}
                       >
                         {item.message}
                       </p>
+                      {item.recommendation && item.recommendation !== item.message && (
+                        <div
+                          style={{
+                            marginTop: '0.35rem',
+                            fontSize: '0.725rem',
+                            color: 'var(--brand-primary)',
+                            backgroundColor: 'rgba(99, 102, 241, 0.08)',
+                            padding: '0.2rem 0.45rem',
+                            borderRadius: '4px',
+                            display: 'inline-block',
+                          }}
+                        >
+                          Tip: {item.recommendation}
+                        </div>
+                      )}
                     </div>
 
                     <button
@@ -344,7 +528,8 @@ export const NotificationPopover = () => {
                         e.stopPropagation();
                         removeNotification(item.id);
                       }}
-                      aria-label="Dismiss"
+                      aria-label="Dismiss notification"
+                      title="Dismiss"
                       style={{
                         background: 'none',
                         border: 'none',
@@ -352,6 +537,7 @@ export const NotificationPopover = () => {
                         cursor: 'pointer',
                         padding: '0.2rem',
                         opacity: 0.6,
+                        flexShrink: 0,
                       }}
                     >
                       <X size={13} />
@@ -362,21 +548,51 @@ export const NotificationPopover = () => {
             )}
           </div>
 
-          {/* Footer */}
+          {/* Footer with Link to Insights & Alerts */}
           <div
             style={{
-              padding: '0.65rem 1rem',
+              padding: '0.75rem 1.25rem',
               backgroundColor: 'var(--bg-subtle)',
-              textAlign: 'center',
               borderTop: '1px solid var(--border-subtle)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
             }}
           >
-            <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-              Real-time financial alerts enabled
+            <span
+              style={{
+                fontSize: '0.725rem',
+                color: 'var(--text-muted)',
+              }}
+            >
+              Account-isolated alerts
             </span>
+            <button
+              type="button"
+              onClick={() => {
+                setIsOpen(false);
+                navigate('/alerts');
+              }}
+              style={{
+                background: 'none',
+                border: 'none',
+                color: 'var(--brand-primary)',
+                fontSize: '0.775rem',
+                fontWeight: 700,
+                cursor: 'pointer',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.3rem',
+                padding: '2px 4px',
+              }}
+            >
+              View All Insights <ArrowRight size={13} />
+            </button>
           </div>
         </div>
       )}
     </div>
   );
 };
+
+export default NotificationPopover;
