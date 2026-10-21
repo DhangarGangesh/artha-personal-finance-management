@@ -46,7 +46,8 @@ async function register({ name, email, password }) {
   const passwordHash = await bcrypt.hash(password, config.bcryptRounds);
   let user;
   try {
-    user = await User.create({ name, email, passwordHash });
+    // Explicitly guarantee role is 'user' and status is 'active' for public registration
+    user = await User.create({ name, email, passwordHash, role: 'user', status: 'active' });
   } catch (err) {
     // Two registrations for the same email at the same instant: the unique index rejects the second.
     if (err.code === 11000) throw duplicateEmailError();
@@ -68,12 +69,32 @@ function getDummyHash() {
   return dummyHashPromise;
 }
 
-async function login({ email, password }) {
+async function login({ email, password }, reqMeta = {}) {
   const user = await User.findOne({ email }).select('+passwordHash');
   const hash = user ? user.passwordHash : await getDummyHash();
   const passwordMatches = await bcrypt.compare(password, hash);
 
   if (!user || !passwordMatches) throw AppError.unauthorized(INVALID_CREDENTIALS);
+
+  if (user.status === 'suspended') {
+    throw AppError.forbidden('Your account has been suspended. Please contact an administrator.');
+  }
+
+  user.lastLoginAt = new Date();
+  await user.save();
+
+  if (user.role === 'admin') {
+    const AuditLog = require('../models/AuditLog');
+    await AuditLog.create({
+      adminId: user._id,
+      adminEmail: user.email,
+      action: 'ADMIN_LOGIN',
+      details: { message: 'Administrator logged in' },
+      ipAddress: reqMeta.ip || '',
+      userAgent: reqMeta.userAgent || '',
+    }).catch(() => {});
+  }
+
   return { user, token: signToken(user._id) };
 }
 

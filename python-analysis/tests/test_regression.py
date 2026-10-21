@@ -126,3 +126,18 @@ def test_regression_handles_constant_values_without_non_finite_results():
     assert fit is not None
     assert np.isfinite(fit["coefficient"])
     assert fit["rSquared"] == 1
+
+
+def test_expenditure_trend_generates_calibrated_forecast():
+    rows = monthly_transactions([30000] * 5, [10000, 12000, 14000, 16000, 18000])
+    res = analyze_regression(rows, AS_OF)
+    forecast = res["expenditureTrend"]["forecast"]
+    assert forecast["status"] == "available"
+    assert forecast["horizonMonths"] == 3
+    assert len(forecast["projections"]) == 3
+    # Next month should extrapolate along 2000/month slope: 18000 + 2000 = 20000
+    assert forecast["projections"][0]["projected"] == pytest.approx(20000)
+    assert forecast["projections"][0]["lowerBound"] <= forecast["projections"][0]["projected"]
+    assert forecast["projections"][0]["upperBound"] >= forecast["projections"][0]["projected"]
+    assert "assumptions" in forecast
+    assert "limitations" in forecast

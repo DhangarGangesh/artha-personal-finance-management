@@ -26,9 +26,11 @@
     if (t) headers.Authorization = 'Bearer ' + t;
     if (body !== undefined) headers['Content-Type'] = 'application/json';
 
+    var normalizedPath = path.startsWith('/api/') ? path.slice(4) : path;
+
     var res;
     try {
-      res = await fetch(BASE + path, {
+      res = await fetch(BASE + normalizedPath, {
         method: method,
         headers: headers,
         body: body === undefined ? undefined : JSON.stringify(body),

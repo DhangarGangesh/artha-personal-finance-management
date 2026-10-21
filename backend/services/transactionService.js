@@ -19,18 +19,21 @@ function buildFilter(userId, f) {
   if (f.type) filter.type = f.type;
   if (f.category) filter.category = f.category;
 
-  if (f.from || f.to) {
+  const fromDate = f.from || f.startDate;
+  const toDate = f.to || f.endDate;
+  if (fromDate || toDate) {
     filter.date = {};
-    if (f.from) filter.date.$gte = f.from;
-    if (f.to) filter.date.$lt = new Date(f.to.getTime() + 24 * 60 * 60 * 1000); // "to" is inclusive of that whole day
+    if (fromDate) filter.date.$gte = fromDate;
+    if (toDate) filter.date.$lt = new Date(toDate.getTime() + 24 * 60 * 60 * 1000); // "to" is inclusive of that whole day
   }
   if (f.minAmount !== undefined || f.maxAmount !== undefined) {
     filter.amount = {};
     if (f.minAmount !== undefined) filter.amount.$gte = f.minAmount;
     if (f.maxAmount !== undefined) filter.amount.$lte = f.maxAmount;
   }
-  if (f.q) {
-    const pattern = escapeRegex(f.q); // user text is escaped: it can never become a regex
+  const searchQuery = f.q || f.search;
+  if (searchQuery) {
+    const pattern = escapeRegex(searchQuery); // user text is escaped: it can never become a regex
     filter.$or = [{ description: { $regex: pattern, $options: 'i' } }, { category: { $regex: pattern, $options: 'i' } }];
   }
   return filter;

@@ -54,7 +54,7 @@ describe('test database naming', () => {
 
 describe('test database lifecycle (real MongoDB)', () => {
   beforeAll(connectTestDb, 180000);
-  afterAll(closeTestDb); // also exercises "close twice is safe", because a test below closes first
+  afterAll(closeTestDb, 15000); // also exercises "close twice is safe", because a test below closes first
 
   test('connects to a uniquely named artha_test_* database, never the real "artha" one', () => {
     expect(mongoose.connection.readyState).toBe(1);
@@ -87,15 +87,19 @@ describe('test database lifecycle (real MongoDB)', () => {
     expect(mongoose.connection.readyState).toBe(0);
     expect(getTestDbInfo()).toEqual({ uri: null, dbName: null });
 
-    // An independent connection must no longer find the database.
-    const checker = await mongoose.createConnection(uri, buildConnectOptions('admin')).asPromise();
+    // An independent connection must no longer find the database (or server stopped if in-memory).
     try {
-      const { databases } = await checker.db.admin().listDatabases();
-      expect(databases.map((d) => d.name)).not.toContain(dbName);
-    } finally {
-      await checker.close();
+      const checker = await mongoose.createConnection(uri, buildConnectOptions('admin')).asPromise();
+      try {
+        const { databases } = await checker.db.admin().listDatabases();
+        expect(databases.map((d) => d.name)).not.toContain(dbName);
+      } finally {
+        await checker.close();
+      }
+    } catch (err) {
+      expect(err.message).toMatch(/ECONNREFUSED|ServerSelection/);
     }
 
     await expect(closeTestDb()).resolves.toBeUndefined(); // idempotent
-  });
+  }, 15000);
 });

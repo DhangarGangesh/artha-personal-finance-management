@@ -10,9 +10,13 @@
   "scripts": {
     "start": "node backend/server.js",
     "dev": "nodemon backend/server.js",
+    "build": "vite build",
+    "client:dev": "vite",
     "test": "jest --runInBand",
     "test:py": "node scripts/run-pytest.js",
-    "test:all": "npm test && npm run test:py"
+    "test:all": "npm test && npm run test:py",
+    "admin:create": "node scripts/create-admin.js",
+    "seed": "node scripts/seed.js"
   },
   "jest": {
     "testEnvironment": "node",
@@ -30,15 +34,23 @@
     "dotenv": "^18.0.5",
     "express": "^5.2.1",
     "express-validator": "^7.3.2",
+    "framer-motion": "^14.4.0",
     "helmet": "^8.3.0",
     "jsonwebtoken": "^9.0.3",
+    "lucide-react": "^1.60.0",
     "mongoose": "^9.10.4",
-    "morgan": "^1.12.1"
+    "morgan": "^1.12.1",
+    "react": "^19.3.1",
+    "react-chartjs-2": "^5.3.1",
+    "react-dom": "^19.3.1",
+    "react-router-dom": "^7.18.4"
   },
   "devDependencies": {
+    "@vitejs/plugin-react": "^6.1.2",
     "jest": "^30.5.2",
     "mongodb-memory-server": "^11.3.0",
     "nodemon": "^3.1.14",
-    "supertest": "^7.3.1"
+    "supertest": "^7.3.1",
+    "vite": "^8.3.4"
   }
 }

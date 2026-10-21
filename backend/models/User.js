@@ -30,6 +30,26 @@ const userSchema = new mongoose.Schema(
       required: [true, 'Password hash is required'],
       select: false,
     },
+    role: {
+      type: String,
+      enum: {
+        values: ['user', 'admin'],
+        message: 'Role must be user or admin',
+      },
+      default: 'user',
+    },
+    status: {
+      type: String,
+      enum: {
+        values: ['active', 'suspended'],
+        message: 'Status must be active or suspended',
+      },
+      default: 'active',
+    },
+    lastLoginAt: {
+      type: Date,
+      default: null,
+    },
   },
   { timestamps: true }
 );
@@ -37,6 +57,8 @@ const userSchema = new mongoose.Schema(
 // Unique index = the database-level guarantee against duplicate accounts
 // (also protects against two simultaneous registrations racing past the app-level check).
 userSchema.index({ email: 1 }, { unique: true });
+userSchema.index({ role: 1 });
+userSchema.index({ status: 1 });
 
 function sanitize(doc, ret) {
   delete ret.passwordHash;
