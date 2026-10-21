@@ -337,3 +337,116 @@ describe('auth response headers', () => {
     expect(res.headers['cache-control']).toBe('no-store');
   });
 });
+
+describe('PUT /api/auth/password', () => {
+  test('updates password successfully and allows login with the new password', async () => {
+    const regRes = await register();
+    const token = regRes.body.data.token;
+    const email = regRes.body.data.user.email;
+
+    const changeRes = await request(app)
+      .put('/api/auth/password')
+      .set('Authorization', `Bearer ${token}`)
+      .send({
+        currentPassword: VALID.password,
+        newPassword: 'BrandNewPassword123',
+      });
+
+    expect(changeRes.status).toBe(200);
+    expect(changeRes.body.success).toBe(true);
+    expect(changeRes.body.message).toMatch(/password/i);
+
+    // Old password must fail
+    const oldLogin = await login({ email, password: VALID.password });
+    expect(oldLogin.status).toBe(401);
+
+    // New password must succeed
+    const newLogin = await login({ email, password: 'BrandNewPassword123' });
+    expect(newLogin.status).toBe(200);
+    expect(newLogin.body.data.user.email).toBe(email);
+  });
+
+  test('rejects if current password is wrong', async () => {
+    const regRes = await register();
+    const token = regRes.body.data.token;
+
+    const changeRes = await request(app)
+      .put('/api/auth/password')
+      .set('Authorization', `Bearer ${token}`)
+      .send({
+        currentPassword: 'WrongCurrentPassword1',
+        newPassword: 'BrandNewPassword123',
+      });
+
+    expect(changeRes.status).toBe(400);
+    expect(changeRes.body.message).toMatch(/current password is incorrect/i);
+  });
+
+  test('rejects if new password is same as current password', async () => {
+    const regRes = await register();
+    const token = regRes.body.data.token;
+
+    const changeRes = await request(app)
+      .put('/api/auth/password')
+      .set('Authorization', `Bearer ${token}`)
+      .send({
+        currentPassword: VALID.password,
+        newPassword: VALID.password,
+      });
+
+    expect(changeRes.status).toBe(400);
+    expect(changeRes.body.message).toMatch(/cannot be the same/i);
+  });
+
+  test('rejects weak new password (too short or missing number)', async () => {
+    const regRes = await register();
+    const token = regRes.body.data.token;
+
+    const shortRes = await request(app)
+      .put('/api/auth/password')
+      .set('Authorization', `Bearer ${token}`)
+      .send({
+        currentPassword: VALID.password,
+        newPassword: 'short1',
+      });
+    expect(shortRes.status).toBe(400);
+
+    const noNumRes = await request(app)
+      .put('/api/auth/password')
+      .set('Authorization', `Bearer ${token}`)
+      .send({
+        currentPassword: VALID.password,
+        newPassword: 'NoNumberPasswordHere',
+      });
+    expect(noNumRes.status).toBe(400);
+  });
+
+  test('rejects unauthenticated password update', async () => {
+    const changeRes = await request(app)
+      .put('/api/auth/password')
+      .send({
+        currentPassword: VALID.password,
+        newPassword: 'BrandNewPassword123',
+      });
+    expect(changeRes.status).toBe(401);
+  });
+});
+
+describe('PUT /api/auth/profile', () => {
+  test('updates user name successfully', async () => {
+    const regRes = await register();
+    const token = regRes.body.data.token;
+
+    const updateRes = await request(app)
+      .put('/api/auth/profile')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ name: 'Asha NewName' });
+
+    expect(updateRes.status).toBe(200);
+    expect(updateRes.body.data.user.name).toBe('Asha NewName');
+
+    const meRes = await me(token);
+    expect(meRes.body.data.user.name).toBe('Asha NewName');
+  });
+});
+

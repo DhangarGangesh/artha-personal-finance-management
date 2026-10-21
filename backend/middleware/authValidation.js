@@ -44,4 +44,26 @@ const loginRules = [
     .custom((value) => Buffer.byteLength(value, 'utf8') <= 1024).withMessage('Password is too long'),
 ];
 
-module.exports = { registerRules, loginRules };
+const changePasswordRules = [
+  body('currentPassword')
+    .isString().withMessage('Current password is required').bail()
+    .notEmpty().withMessage('Current password is required').bail()
+    .custom((value) => Buffer.byteLength(value, 'utf8') <= 1024).withMessage('Current password is too long'),
+  body('newPassword')
+    .isString().withMessage('New password is required').bail()
+    .isLength({ min: 8 }).withMessage('New password must be at least 8 characters').bail()
+    .custom((value) => Buffer.byteLength(value, 'utf8') <= MAX_PASSWORD_BYTES)
+    .withMessage('New password must be at most 72 characters').bail()
+    .matches(/[A-Za-z]/).withMessage('New password must contain at least one letter').bail()
+    .matches(/\d/).withMessage('New password must contain at least one number'),
+];
+
+const updateProfileRules = [
+  body('name')
+    .isString().withMessage('Name is required').bail()
+    .trim()
+    .isLength({ min: 2, max: 60 }).withMessage('Name must be between 2 and 60 characters'),
+];
+
+module.exports = { registerRules, loginRules, changePasswordRules, updateProfileRules };
+

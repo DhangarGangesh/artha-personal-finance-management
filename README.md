@@ -437,6 +437,9 @@ All protected endpoints require the header: `Authorization: Bearer <token>`
 | `POST` | `/api/auth/login` | Public | Authenticate user and receive JWT token |
 | `POST` | `/api/auth/logout` | Public | Stateless client logout (discards token) |
 | `GET` | `/api/auth/me` | Protected | Fetch current logged-in user profile |
+| `PUT` | `/api/auth/password` | Protected | Update account password with verification (`currentPassword`, `newPassword`) |
+| `PUT` | `/api/auth/profile` | Protected | Update profile name and display metadata (`name`) |
+
 
 ### 💳 Transactions (`/api/transactions`)
 | Method | Endpoint | Access | Description |

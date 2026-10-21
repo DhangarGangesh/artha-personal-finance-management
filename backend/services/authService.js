@@ -98,4 +98,62 @@ async function login({ email, password }, reqMeta = {}) {
   return { user, token: signToken(user._id) };
 }
 
-module.exports = { register, login, signToken, verifyToken, expiresInValue };
+async function changePassword(userId, { currentPassword, newPassword }, reqMeta = {}) {
+  const user = await User.findById(userId).select('+passwordHash');
+  if (!user) {
+    throw AppError.notFound('User not found');
+  }
+
+  const passwordMatches = await bcrypt.compare(currentPassword, user.passwordHash);
+  if (!passwordMatches) {
+    throw AppError.badRequest('Current password is incorrect', {
+      fields: { currentPassword: 'Current password is incorrect' },
+    });
+  }
+
+  const samePassword = await bcrypt.compare(newPassword, user.passwordHash);
+  if (samePassword) {
+    throw AppError.badRequest('New password cannot be the same as your current password', {
+      fields: { newPassword: 'New password cannot be the same as your current password' },
+    });
+  }
+
+  user.passwordHash = await bcrypt.hash(newPassword, config.bcryptRounds);
+  await user.save();
+
+  if (user.role === 'admin') {
+    const AuditLog = require('../models/AuditLog');
+    await AuditLog.create({
+      adminId: user._id,
+      adminEmail: user.email,
+      action: 'ADMIN_PASSWORD_CHANGE',
+      details: { message: 'Administrator changed account password' },
+      ipAddress: reqMeta.ip || '',
+      userAgent: reqMeta.userAgent || '',
+    }).catch(() => {});
+  }
+
+  return { user, token: signToken(user._id) };
+}
+
+async function updateProfile(userId, { name }) {
+  const user = await User.findById(userId);
+  if (!user) {
+    throw AppError.notFound('User not found');
+  }
+
+  user.name = name.trim();
+  await user.save();
+  return user;
+}
+
+module.exports = {
+  register,
+  login,
+  changePassword,
+  updateProfile,
+  signToken,
+  verifyToken,
+  expiresInValue,
+};
+
